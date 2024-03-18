@@ -16,6 +16,7 @@ def obtain_sentiment(text):
     return emotion
 
 def call_api(videoId):
+    load_dotenv()
     api_service_name = 'youtube'
     api_version = 'v3'
     api_key = os.getenv('YOUTUBE_API_KEY')
