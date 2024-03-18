@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv, dotenv_values
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS
@@ -10,10 +12,14 @@ CORS(app)
 
 parser = reqparse.RequestParser()
 parser.add_argument('task')
-class Message(Resource):
-    def get(self):
-        return {"message": f'{obtain_sentiment("I am happy")[0]["label"]}'}
-api.add_resource(Message, '/api/home')
+class Url(Resource):
+    """def get(self):
+        return {"message": f'{obtain_sentiment("I am happy")[0]["label"]}'}"""
+    
+    def get(self, url):
+        return {"message": f'{url}'}
+    
+api.add_resource(Url, '/api/<string:url>')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(debug=True, port=os.getenv('PORT'))
