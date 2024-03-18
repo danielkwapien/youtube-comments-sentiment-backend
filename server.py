@@ -1,9 +1,11 @@
 import os
+import json
 from dotenv import load_dotenv, dotenv_values
 from flask import Flask
+from flask import jsonify
 from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS
-from functions import obtain_sentiment
+from functions import obtain_sentiment, get_sentiment, obtain_proportion
 
 
 app = Flask(__name__)
@@ -17,7 +19,10 @@ class Url(Resource):
         return {"message": f'{obtain_sentiment("I am happy")[0]["label"]}'}"""
     
     def get(self, url):
-        return {"message": f'{url}'}
+        sentiments = get_sentiment('Uk28ec4W4sA')
+        proportion = obtain_proportion(sentiments)
+        proportion_json = proportion.to_json(orient='index')
+        return jsonify(json.loads(proportion_json))
     
 api.add_resource(Url, '/api/<string:url>')
 
