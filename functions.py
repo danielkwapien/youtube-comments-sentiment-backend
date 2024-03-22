@@ -1,5 +1,7 @@
 import os
+import json
 from dotenv import load_dotenv, dotenv_values
+from flask import jsonify
 from transformers import pipeline
 import googleapiclient.discovery
 import googleapiclient.errors
@@ -9,11 +11,31 @@ import re
 import nltk
 import lxml
 import contractions
+import pickle
+import torch
+from transformers import AutoTokenizer, AutoConfig, AutoModelForSequenceClassification
+from scipy.special import softmax
+import numpy as np
+
+"""with open("server/roberta-go-emotions.bin", "rb") as f:
+  model = torch.load(f, map_location=torch.device('cpu'))"""
+
+tokenizer = AutoTokenizer.from_pretrained("SamLowe/roberta-base-go_emotions")
+config = AutoConfig.from_pretrained("SamLowe/roberta-base-go_emotions")
+model = AutoModelForSequenceClassification.from_pretrained("SamLowe/roberta-base-go_emotions")
 
 def obtain_sentiment(text):
-    pipe = pipeline("text-classification", model="SamLowe/roberta-base-go_emotions")
-    emotion = pipe(text)
-    return emotion
+    encoded_text = tokenizer(text, return_tensors="pt")
+    with torch.no_grad():
+        output = model(**encoded_text)
+        scores = output[0][0].detach().numpy()
+        scores = softmax(scores)
+        ranking = np.argsort(scores)
+        ranking = ranking[::-1]
+        emotion = config.id2label[ranking[0]]
+        if emotion == 'neutral' and ranking[1]>0.01:
+            emotion = config.id2label[ranking[1]]
+        return emotion
 
 def call_api(videoId):
     load_dotenv()
@@ -69,5 +91,18 @@ def get_sentiment(videoId):
     return comments
 
 def obtain_proportion(comments):
-    sentiment_proportion = comments['sentiment'].apply(lambda x: x[0]['label']).value_counts(normalize=True)
+    print(comments)
+    sentiment_proportion = comments['sentiment'].value_counts(normalize=True)
     return sentiment_proportion
+
+def get_proportion(videoId):
+    sentiments = get_sentiment(videoId)
+    proportion = obtain_proportion(sentiments)
+    proportion_json = proportion.to_json(orient='index')
+    return json.loads(proportion_json)
+
+def get_timeline(videoId):
+    comments = call_api(videoId)
+    timeline = pd.to_datetime(comments['published_at']).dt.date.value_counts().sort_index()
+    timeline_json = timeline.to_json(orient='index')
+    return json.loads(timeline_json)
