@@ -17,14 +17,12 @@ from transformers import AutoTokenizer, AutoConfig, AutoModelForSequenceClassifi
 from scipy.special import softmax
 import numpy as np
 
-class SentimentAnalysis:
+class CommentAnalysis:
 
     def __init__(self, model_name):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.config = AutoConfig.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
-
-
 
     def obtain_sentiment(self, text):
         encoded_text = self.tokenizer(text, return_tensors="pt")
@@ -51,7 +49,7 @@ class SentimentAnalysis:
         request = youtube.commentThreads().list(
             part='snippet',
             videoId=videoId,
-            maxResults=100
+            maxResults=1000
         )
 
         res = request.execute()
@@ -71,7 +69,6 @@ class SentimentAnalysis:
 
     def wrangle_text(self, text):
         soup = BeautifulSoup(text, 'lxml')
-        print(soup)
         text_without_tags = soup.get_text(separator='\n')
         url_pattern = r'https?://\S+|www\.\S+'
         text_without_urls = re.sub(url_pattern, '', text_without_tags)
@@ -101,3 +98,38 @@ class SentimentAnalysis:
         timeline = pd.to_datetime(comments['published_at']).dt.date.value_counts().sort_index()
         timeline_json = timeline.to_json(orient='index')
         return json.loads(timeline_json)
+    
+class ExtractFeatures:
+
+    def call_api(self, videoId):
+        load_dotenv()
+        api_service_name = 'youtube'
+        api_version = 'v3'
+        api_key = os.getenv('YOUTUBE_API_KEY')
+
+        youtube = googleapiclient.discovery.build(
+            api_service_name, api_version, developerKey = api_key  
+        )
+
+        request = youtube.videos().list(
+            part='snippet',
+            id=videoId
+        )
+
+        res = request.execute()
+
+        item = res['items'][0]['snippet']['thumbnails']['default']
+        thumbnail  = [{
+            'url': item['url'], 'width': item['width'], 'height': item['height']
+            }]
+        thumbnail = pd.DataFrame(thumbnail, columns=['url', 'width', 'height'])
+        thumbnail_json = thumbnail.to_json(orient='index')
+
+        item = res['items'][0]['snippet']['title']
+        title = [{
+            'title': item
+            }]
+        title = pd.DataFrame(title, columns=['title'])
+        title_json = title.to_json(orient='index')
+
+        return json.loads(thumbnail_json), json.loads(title_json) 

@@ -5,7 +5,7 @@ from flask import Flask
 from flask import jsonify
 from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS
-from functions import SentimentAnalysis
+from functions import CommentAnalysis, ExtractFeatures
 
 
 app = Flask(__name__)
@@ -17,12 +17,13 @@ parser.add_argument('task')
 class Url(Resource):
     
     def get(self, url):
-        analyzer = SentimentAnalysis("SamLowe/roberta-base-go_emotions")
-        proportion_json = analyzer.get_proportion('VioxsWYzoJk')
-        timeline_json = analyzer.get_timeline('VioxsWYzoJk')
-        data_json = {'proportion': {**proportion_json}, 'time': {**timeline_json}}
+        analyzer = CommentAnalysis("SamLowe/roberta-base-go_emotions")
+        thumbnail = ExtractFeatures()
+        proportion_json = analyzer.get_proportion(url)
+        timeline_json = analyzer.get_timeline(url)
+        thumbnail_json, title_json = thumbnail.call_api(url)
+        data_json = {'proportion': {**proportion_json}, 'time': {**timeline_json}, 'thumbnail': {**thumbnail_json}, 'title': {**title_json}}
         return jsonify(data_json)
-    
     
 api.add_resource(Url, '/api/<string:url>')
 
