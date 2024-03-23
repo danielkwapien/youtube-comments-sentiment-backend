@@ -64,10 +64,10 @@ class CommentAnalysis:
                 comment['likeCount'],
                 comment['textDisplay'],
                 comment['likeCount'],
-                comment['parentId']
+                #comment['parentId']
             ])
 
-        return pd.DataFrame(comments, columns=['author', 'published_at', 'updated_at', 'likeCount', 'text'])
+        return pd.DataFrame(comments, columns=['author', 'published_at', 'updated_at', 'likeCount', 'text', 'likeCount'])
 
     def wrangle_text(self, text):
         soup = BeautifulSoup(text, 'lxml')
