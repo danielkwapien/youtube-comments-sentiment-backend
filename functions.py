@@ -62,7 +62,9 @@ class CommentAnalysis:
                 comment['publishedAt'],
                 comment['updatedAt'],
                 comment['likeCount'],
-                comment['textDisplay']
+                comment['textDisplay'],
+                comment['likeCount'],
+                comment['parentId']
             ])
 
         return pd.DataFrame(comments, columns=['author', 'published_at', 'updated_at', 'likeCount', 'text'])
@@ -118,7 +120,7 @@ class ExtractFeatures:
 
         res = request.execute()
 
-        item = res['items'][0]['snippet']['thumbnails']['default']
+        item = res['items'][0]['snippet']['thumbnails']['medium']
         thumbnail  = [{
             'url': item['url'], 'width': item['width'], 'height': item['height']
             }]
